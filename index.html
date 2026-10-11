@@ -25,6 +25,8 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var
 h1{margin:0;font-size:22px;color:var(--pink);flex:1}
 h1 small{display:block;font-size:12px;font-weight:400;color:var(--mut)}
 #clock{font-size:26px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.mbtn{border:0;background:var(--lp);color:var(--pink);width:40px;height:40px;border-radius:12px;font-size:20px;font-weight:700}
+.mbtn.on{background:var(--pink);color:#fff}
 .tabs{display:flex;gap:6px;margin-top:10px}
 .tab{flex:1;border:0;background:transparent;padding:9px 4px;font-weight:700;color:var(--mut);border-bottom:3px solid transparent}
 .tab.on{color:var(--pink);border-color:var(--pink)}
@@ -74,7 +76,7 @@ main{padding:12px 14px 40px;max-width:640px;margin:0 auto}
 </head>
 <body>
 <header>
-  <div class="row"><img class="av" id="av" alt=""><h1>Dreamy Dawn<small id="st"></small></h1><div id="clock"></div></div>
+  <div class="row"><img class="av" id="av" alt=""><h1>Dreamy Dawn<small id="st"></small></h1><div id="clock"></div><button class="mbtn" id="musb" title="Background music">&#9834;</button></div>
   <div class="tabs" id="tabs"></div>
 </header>
 <main id="main"></main>
@@ -131,10 +133,10 @@ function arm(){
   unlock();D.armed=true;D.at=nextTs(D.wake);save();keepAwake(true);render();toast('Alarm set for '+fmt(D.wake)+' (˶ᵔ ᵕ ᵔ˶)')}
 function disarm(){D.armed=false;save();keepAwake(false);render()}
 function ring(){
-  ui.ringing=true;var r=$('#ring');r.replaceChildren(h('div',null,'Wake-up alarm (≧◡≦)'),h('h2',null,fmt(D.wake)),
+  ui.ringing=true;if(MU.on)musicStop();var r=$('#ring');r.replaceChildren(h('div',null,'Wake-up alarm (≧◡≦)'),h('h2',null,fmt(D.wake)),
     h('p',null,'The alarm is across the room. Get up, walk over, and turn it off. ヾ(＾∇＾)'),h('button',{class:'btn big',onclick:stopRing},'I am up! Stop alarm ٩(◕‿◕)۶'));
   r.style.display='flex';var n=0;clearInterval(beepT);beepT=setInterval(function(){beep(n%2?660:880,.3);n++;try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}},600)}
-function stopRing(){clearInterval(beepT);ui.ringing=false;$('#ring').style.display='none';D.armed=false;save();keepAwake(false);ui.tab='morning';render()}
+function stopRing(){clearInterval(beepT);ui.ringing=false;$('#ring').style.display='none';D.armed=false;save();keepAwake(false);ui.tab='morning';if(MU.want)musicStart();musicBtn();render()}
 function tick(){
   var n=new Date();$('#clock').textContent=fmt(n.getHours()*60+n.getMinutes());rollDay();
   if(D.armed&&!ui.ringing&&Date.now()>=D.at){if(Date.now()-D.at<20*60e3)ring();else{D.armed=false;save();render();toast('Your alarm time passed while the page was closed.')}}
@@ -145,6 +147,52 @@ function tick(){
   else{var ev=[['Wind-down',windMin()],['Lights out',D.bed],['Wake up',D.wake]].map(function(e){return[e[0],nextTs(e[1])]}).sort(function(a,b){return a[1]-b[1]})[0];st.textContent='Next: '+ev[0]+' in '+until(ev[1])}
 }
 function setT(k,v){var m=parseT(v);if(m==null)return;D[k]=m;if(D.armed){D.armed=false;keepAwake(false);toast('Times changed (・_・;) Alarm turned off, set it again.')}save();render()}
+var MU={on:false,want:false,vol:.5,ctx:null,master:null,bus:null,timer:null,bt:null,step:0},MUKEY='dreamydawn.music';
+var CHORDS=[[48,52,55,59],[45,48,52,55],[41,45,48,52],[43,47,50,52]],PENT=[72,74,76,79,81,84];
+try{var mm=JSON.parse(localStorage.getItem(MUKEY)||'{}');if(typeof mm.vol==='number')MU.vol=Math.max(0,Math.min(1,mm.vol));MU.want=!!mm.on}catch(e){}
+function mf(m){return 440*Math.pow(2,(m-69)/12)}
+function musicSave(){try{localStorage.setItem(MUKEY,JSON.stringify({on:MU.want,vol:MU.vol}))}catch(e){}}
+function musicVol(){if(MU.master&&MU.ctx)MU.master.gain.setTargetAtTime(MU.vol*.9,MU.ctx.currentTime,.15)}
+function musicBtn(){var b=$('#musb');if(b)b.classList.toggle('on',MU.on);var b2=$('#mus2');if(b2)b2.textContent='Music: '+(MU.on?'on. Tap to stop':'off. Tap to play')}
+function playChord(){
+  var c=MU.ctx;if(!c||!MU.on)return;var now=c.currentTime,ch=CHORDS[MU.step++%CHORDS.length];
+  var f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=900;f.connect(MU.bus);
+  var g=c.createGain();g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.04,now+3);g.gain.setValueAtTime(.04,now+6);g.gain.linearRampToValueAtTime(0,now+11);g.connect(f);
+  ch.forEach(function(m){[-4,4].forEach(function(dt,i){var o=c.createOscillator();o.type=i?'triangle':'sine';o.frequency.value=mf(m);o.detune.value=dt;o.connect(g);o.start(now);o.stop(now+11.2)})})}
+function bell(){
+  var c=MU.ctx;if(!c||!MU.on)return;var now=c.currentTime,o=c.createOscillator(),g=c.createGain();
+  o.type='sine';o.frequency.value=mf(PENT[Math.floor(Math.random()*PENT.length)]);
+  g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.05,now+.02);g.gain.exponentialRampToValueAtTime(.0008,now+3.5);
+  o.connect(g);g.connect(MU.bus);o.start(now);o.stop(now+3.6);MU.bt=setTimeout(bell,2500+Math.random()*4500)}
+function musicStart(){
+  if(MU.on)return;
+  try{
+    var C=window.AudioContext||window.webkitAudioContext;if(!C)return;if(!MU.ctx)MU.ctx=new C();
+    var c=MU.ctx;if(c.state==='suspended')c.resume();
+    MU.master=c.createGain();MU.master.gain.value=0;MU.master.connect(c.destination);
+    var conv=c.createConvolver(),len=Math.floor(c.sampleRate*3),buf=c.createBuffer(2,len,c.sampleRate);
+    for(var k=0;k<2;k++){var d=buf.getChannelData(k);for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5)}
+    conv.buffer=buf;var wet=c.createGain();wet.gain.value=.5;conv.connect(wet);wet.connect(MU.master);
+    var dry=c.createGain();dry.gain.value=.7;dry.connect(MU.master);
+    MU.bus=c.createGain();MU.bus.connect(dry);MU.bus.connect(conv);
+    MU.on=true;musicVol();playChord();clearInterval(MU.timer);MU.timer=setInterval(playChord,8000);
+    clearTimeout(MU.bt);MU.bt=setTimeout(bell,2500);
+  }catch(e){MU.on=false}
+  musicBtn()}
+function musicStop(){
+  if(!MU.on)return;MU.on=false;clearInterval(MU.timer);clearTimeout(MU.bt);
+  var m=MU.master,c=MU.ctx;try{m.gain.setTargetAtTime(0,c.currentTime,.25)}catch(e){}
+  setTimeout(function(){try{m.disconnect()}catch(e){}},1500);musicBtn()}
+function musicToggle(){if(MU.on){MU.want=false;musicStop()}else{MU.want=true;musicStart()}musicSave();musicBtn()}
+function musicInit(){
+  var b=$('#musb');if(b)b.onclick=musicToggle;var b2=$('#mus2');if(b2)b2.onclick=musicToggle;
+  var v=$('#vol');if(v){v.value=Math.round(MU.vol*100);v.oninput=function(){MU.vol=this.value/100;musicVol();musicSave()}}
+  document.addEventListener('pointerdown',function(e){if(MU.want&&!MU.on&&!(e.target.closest&&e.target.closest('#musb,#mus2')))musicStart()},true);
+  document.addEventListener('visibilitychange',function(){if(document.hidden){if(MU.on)musicStop()}else if(MU.want)musicStart()});
+  musicBtn()}
+
+function musicCard(){var v=h('input',{type:'range',min:'0',max:'100',value:Math.round(MU.vol*100),style:'width:100%;margin-top:12px'});v.addEventListener('input',function(){MU.vol=this.value/100;musicVol();musicSave()});
+  return h('div',{class:'card'},h('h2',null,'Music (\u02f6\u1d54 \u1d55 \u1d54\u02f6)'),h('button',{class:'btn'+(MU.on?'':' alt'),onclick:function(){musicToggle();render()}},MU.on?'Music on. Tap to stop':'Play soft background music'),v,h('p',{class:'note'},'Music pauses when the alarm rings and when you leave the app.'))}
 var TK='sleepplan.theme',TM='light';
 try{TM=localStorage.getItem(TK)||'light'}catch(e){}
 function applyTheme(){var r=document.documentElement;if(TM==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',TM)}
@@ -173,7 +221,7 @@ function planTab(m){
       h('label',null,'Wind-down (min before bed)',h('input',{type:'number',inputmode:'numeric',min:'0',max:'360',value:D.prep,onchange:function(){D.prep=Math.max(0,Math.min(360,+this.value||0));save();render()}})),
       h('label',null,'Minimum sleep (min)',h('input',{type:'number',inputmode:'numeric',min:'60',max:'720',value:D.min,onchange:function(){D.min=Math.max(60,Math.min(720,+this.value||465));save();render()}}))),
     h('p',{class:'note'},'Wind-down starts '+dur(D.prep)+' before lights out. Minimum sleep is '+dur(D.min)+'. Default aim: lights out 10:00 PM, wake 5:40 AM.')));
-  m.append(themeCard());
+  m.append(themeCard());m.append(musicCard());
 }
 function listTab(m,k){
   var L=D.lists[k],dn=D.done[k],c=L.filter(function(x){return dn[x.id]}).length,p=L.length?Math.round(c/L.length*100):0;
@@ -199,7 +247,7 @@ function render(){
   if(ui.tab==='plan')planTab(m);else listTab(m,ui.tab);
   tick();
 }
-applyTheme();$('#av').src=IMG;load();rollDay();render();setInterval(tick,1000);
+applyTheme();musicInit();$('#av').src=IMG;load();rollDay();render();setInterval(tick,1000);
 if(D.armed)keepAwake(true);
 </script>
 </body>
