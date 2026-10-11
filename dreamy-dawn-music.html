@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171326">
+  <title>Dreamy Dawn | Music Controls</title>
+  <style>
+    :root {
+      --night: #171326;
+      --panel: rgba(38, 30, 57, 0.88);
+      --lavender: #e8dcff;
+      --muted: #c2b6d8;
+      --accent: #c9a9ff;
+      --line: rgba(232, 220, 255, 0.22);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      color: var(--lavender);
+      background:
+        radial-gradient(ellipse at 18% 15%, rgba(143, 111, 190, .24), transparent 40%),
+        radial-gradient(ellipse at 85% 85%, rgba(95, 104, 165, .2), transparent 42%),
+        var(--night);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .music-panel {
+      width: min(100%, 440px);
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .3);
+      backdrop-filter: blur(14px);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font: 11px/1.5 Arial, sans-serif;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 6vw, 38px);
+      font-weight: normal;
+      letter-spacing: .02em;
+    }
+
+    .intro {
+      margin: 12px 0 24px;
+      color: var(--muted);
+      font: 14px/1.7 Arial, sans-serif;
+    }
+
+    .track {
+      padding: 17px;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .035);
+    }
+
+    .track-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .disc {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: rgba(201, 169, 255, .1);
+      font-size: 20px;
+    }
+
+    h2 {
+      margin: 0 0 4px;
+      font-size: 17px;
+      font-weight: normal;
+    }
+
+    .track-description {
+      margin: 0;
+      color: var(--muted);
+      font: 12px/1.5 Arial, sans-serif;
+    }
+
+    button, .youtube-link {
+      width: 100%;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 15px;
+      border: 1px solid rgba(201, 169, 255, .55);
+      border-radius: 12px;
+      background: rgba(201, 169, 255, .13);
+      color: var(--lavender);
+      font: 13px Arial, sans-serif;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .2s ease, transform .2s ease;
+    }
+
+    button:hover, .youtube-link:hover {
+      background: rgba(201, 169, 255, .23);
+    }
+
+    button:active, .youtube-link:active { transform: scale(.99); }
+
+    button:focus-visible, .youtube-link:focus-visible {
+      outline: 2px solid var(--lavender);
+      outline-offset: 3px;
+    }
+
+    .status {
+      min-height: 18px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font: 12px/1.5 Arial, sans-serif;
+      text-align: center;
+    }
+
+    .note {
+      margin: 20px 0 0;
+      color: var(--muted);
+      font: 11px/1.7 Arial, sans-serif;
+      text-align: center;
+    }
+
+    /* The YouTube player remains available to the browser but is visually hidden. */
+    .youtube-player {
+      position: fixed;
+      left: -10000px;
+      top: 0;
+      width: 200px;
+      height: 113px;
+      border: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="music-panel">
+    <p class="eyebrow">Past in Pixels · Soundscape</p>
+    <h1>Dreamy Dawn</h1>
+    <p class="intro">
+      A quiet soundtrack for exploring memories. Start the background music
+      whenever you're ready, or open the featured track separately.
+    </p>
+
+    <section class="track" aria-labelledby="background-title">
+      <div class="track-top">
+        <div class="disc" aria-hidden="true">✧</div>
+        <div>
+          <h2 id="background-title">Dreamy Dawn</h2>
+          <p class="track-description">Background soundtrack · YouTube</p>
+        </div>
+      </div>
+      <button id="background-toggle" type="button" aria-pressed="false">
+        <span aria-hidden="true">▶</span>
+        <span id="button-label">Play background music</span>
+      </button>
+      <p id="music-status" class="status" role="status" aria-live="polite">
+        Music is off.
+      </p>
+    </section>
+
+    <section class="track" aria-labelledby="link-title">
+      <div class="track-top">
+        <div class="disc" aria-hidden="true">♫</div>
+        <div>
+          <h2 id="link-title">A Little Memory</h2>
+          <p class="track-description">Featured track · Opens on YouTube</p>
+        </div>
+      </div>
+      <a
+        class="youtube-link"
+        href="https://youtu.be/pAeHWyhqdi8?si=G0YXTXWdEVmThwzo"
+        target="_blank"
+        rel="noopener noreferrer">
+        Listen to the featured track ↗
+      </a>
+    </section>
+
+    <p class="note">
+      Your browser may require a click before music can play. Playback is
+      provided by YouTube.
+    </p>
+  </main>
+
+  <iframe
+    id="youtube-player"
+    class="youtube-player"
+    title="Dreamy Dawn background music player"
+    src="https://www.youtube-nocookie.com/embed/qUsnG3rGcXU?enablejsapi=1&autoplay=0&controls=0&loop=1&playlist=qUsnG3rGcXU"
+    allow="autoplay; encrypted-media"
+    referrerpolicy="strict-origin-when-cross-origin">
+  </iframe>
+
+  <script>
+    const playerFrame = document.getElementById("youtube-player");
+    const toggleButton = document.getElementById("background-toggle");
+    const buttonLabel = document.getElementById("button-label");
+    const status = document.getElementById("music-status");
+
+    let isPlaying = false;
+
+    function sendPlayerCommand(func) {
+      playerFrame.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func, args: [] }),
+        "https://www.youtube-nocookie.com"
+      );
+    }
+
+    toggleButton.addEventListener("click", () => {
+      if (!isPlaying) {
+        sendPlayerCommand("playVideo");
+        isPlaying = true;
+        toggleButton.setAttribute("aria-pressed", "true");
+        buttonLabel.textContent = "Pause background music";
+        toggleButton.querySelector("[aria-hidden='true']").textContent = "Ⅱ";
+        status.textContent = "Playback requested. If it doesn't start, open the track on YouTube.";
+      } else {
+        sendPlayerCommand("pauseVideo");
+        isPlaying = false;
+        toggleButton.setAttribute("aria-pressed", "false");
+        buttonLabel.textContent = "Play background music";
+        toggleButton.querySelector("[aria-hidden='true']").textContent = "▶";
+        status.textContent = "Music is paused.";
+      }
+    });
+  </script>
+</body>
+</html>
